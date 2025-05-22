@@ -5,6 +5,8 @@ import lombok.*;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.mapping.Document;
 
+import java.util.List;
+
 @Document(collection = "products")
 @Data
 @NoArgsConstructor
@@ -34,4 +36,16 @@ public class BankProduct {
 
     @Schema(description = "Límite mensual de movimientos permitidos", example = "5")
     private Integer monthlyLimit;
+
+    @Schema(description = "Límite de crédito para tarjetas", example = "5000.00")
+    private Double creditLimit;
+
+    @Schema(description = "Titulares de la cuenta bancaria empresarial", example = "[\"12345678\", \"87654321\"]")
+    private List<String> holders;
+
+    @Schema(description = "Firmantes autorizados (opcional)", example = "[\"99887766\"]")
+    private List<String> signers;
+
+
+
 }
