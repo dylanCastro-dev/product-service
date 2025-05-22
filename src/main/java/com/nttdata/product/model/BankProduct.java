@@ -1,10 +1,12 @@
 package com.nttdata.product.model;
 
+import com.nttdata.product.model.Type.ProductType;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.*;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.mapping.Document;
 
+import java.math.BigDecimal;
 import java.util.List;
 
 @Document(collection = "products")
@@ -29,16 +31,16 @@ public class BankProduct {
     private String name;
 
     @Schema(description = "Saldo actual del producto", example = "1000.50")
-    private Double balance;
+    private BigDecimal balance;
 
-    @Schema(description = "Indica si el producto tiene comisión de mantenimiento", example = "false")
-    private Boolean maintenanceFee;
+    @Schema(description = "Indica el monto de comisión de mantenimiento", example = "5.00")
+    private Double maintenanceFee;
 
     @Schema(description = "Límite mensual de movimientos permitidos", example = "5")
     private Integer monthlyLimit;
 
     @Schema(description = "Límite de crédito para tarjetas", example = "5000.00")
-    private Double creditLimit;
+    private BigDecimal creditLimit;
 
     @Schema(description = "Titulares de la cuenta bancaria empresarial", example = "[\"12345678\", \"87654321\"]")
     private List<String> holders;
@@ -46,6 +48,6 @@ public class BankProduct {
     @Schema(description = "Firmantes autorizados (opcional)", example = "[\"99887766\"]")
     private List<String> signers;
 
-
-
+    @Schema(description = "Día del mes permitido para operar (1-31)", example = "15")
+    private Integer allowedTransactionDay;
 }

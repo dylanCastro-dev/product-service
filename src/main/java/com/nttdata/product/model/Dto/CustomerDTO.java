@@ -1,5 +1,6 @@
-package com.nttdata.product.model;
+package com.nttdata.product.model.Dto;
 
+import com.nttdata.product.model.Type.CustomerType;
 import lombok.Data;
 
 @Data

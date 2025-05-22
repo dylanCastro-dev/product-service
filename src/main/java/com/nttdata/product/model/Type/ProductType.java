@@ -1,4 +1,4 @@
-package com.nttdata.product.model;
+package com.nttdata.product.model.Type;
 
 public enum ProductType {
     AHORRO,
