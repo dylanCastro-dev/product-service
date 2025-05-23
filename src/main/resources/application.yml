@@ -1,5 +1,25 @@
 spring:
+  data:
+    mongodb:
+      uri: mongodb://localhost:27017/productdb
   application:
     name: product-service
-  config:
-    import: "configserver:http://localhost:8888"
+  cloud:
+    config:
+      enabled: false
+  #config:
+    #import: "configserver:http://localhost:8888"
+
+
+server:
+  port: 8081
+
+logging:
+  level:
+    root: INFO
+
+springdoc:
+  api-docs:
+    path: /v3/api-docs
+  swagger-ui:
+    path: /swagger-ui.html

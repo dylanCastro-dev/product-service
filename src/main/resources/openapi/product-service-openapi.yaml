@@ -1,0 +1,180 @@
+openapi: 3.0.1
+info:
+  title: Bank Product API
+  version: 1.0.0
+  description: API para gestionar productos bancarios (cuentas, créditos, tarjetas)
+servers:
+  - url: http://localhost:8081
+    description: Servidor local
+
+paths:
+  /products:
+    get:
+      summary: Obtener todos los productos
+      description: Devuelve la lista completa de productos bancarios
+      operationId: getAllProducts
+      responses:
+        '200':
+          description: Lista de productos
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BankProductResponse'
+
+    post:
+      summary: Crear un nuevo producto bancario
+      description: Registra un nuevo producto (cuenta, crédito, tarjeta) asociado a un cliente
+      operationId: createProduct
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BankProductBody'
+      responses:
+        '200':
+          description: Producto creado correctamente
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BankProductResponse'
+
+  /products/{id}:
+    get:
+      summary: Obtener un producto por ID
+      description: Busca un producto bancario usando su ID
+      operationId: getProductById
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: ID del producto a consultar
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Producto encontrado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BankProductResponse'
+
+    put:
+      summary: Actualizar un producto bancario
+      description: Actualiza los datos de un producto existente mediante su ID
+      operationId: updateProduct
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: ID del producto a actualizar
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BankProductBody'
+      responses:
+        '200':
+          description: Producto actualizado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BankProductResponse'
+
+    delete:
+      summary: Eliminar un producto bancario
+      description: Elimina un producto por su ID
+      operationId: deleteProduct
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: ID del producto a eliminar
+          schema:
+            type: string
+      responses:
+        '204':
+          description: Producto eliminado exitosamente
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BankProductResponse'
+
+components:
+  schemas:
+    BankProductBody:
+      type: object
+      properties:
+        id:
+          type: string
+          description: ID autogenerado del producto
+          example: 663018e0ac82a12a8445a9b0
+        customerId:
+          type: string
+          description: ID del cliente asociado al producto
+          example: cust1234
+        type:
+          type: string
+          description: Tipo de producto bancario
+          enum: [ AHORRO, CORRIENTE, PLAZO_FIJO, CREDITO_PERSONAL, CREDITO_EMPRESARIAL, TARJETA_CREDITO ]
+          example: AHORRO
+        name:
+          type: string
+          description: Nombre descriptivo del producto
+          example: Cuenta Ahorro Soles
+        balance:
+          type: number
+          format: decimal
+          description: Saldo actual del producto
+          example: 1000.50
+        maintenanceFee:
+          type: number
+          format: double
+          description: Monto de la comisión de mantenimiento
+          example: 5.00
+        monthlyLimit:
+          type: integer
+          description: Límite mensual de movimientos permitidos
+          example: 5
+        creditLimit:
+          type: number
+          format: decimal
+          description: Límite de crédito para tarjetas
+          example: 5000.00
+        holders:
+          type: array
+          description: Titulares de la cuenta empresarial
+          items:
+            type: string
+          example: [ "12345678", "87654321" ]
+        signers:
+          type: array
+          description: Firmantes autorizados
+          items:
+            type: string
+          example: [ "99887766" ]
+        allowedTransactionDay:
+          type: integer
+          description: Dia de operacion permitido
+          example: 5
+
+    BankProductResponse:
+      type: object
+      description: Respuesta procesada
+      properties:
+        status:
+          type: integer
+          description: Código HTTP de respuesta
+          example: 200
+        message:
+          type: string
+          description: Mensaje asociado a la operación
+          example: Producto procesado correctamente
+        products:
+          type: array
+          description: Lista de productos bancarios
+          items:
+            $ref: '#/components/schemas/BankProductBody'

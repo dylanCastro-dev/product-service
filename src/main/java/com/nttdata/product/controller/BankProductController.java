@@ -1,58 +1,121 @@
 package com.nttdata.product.controller;
 
-import com.nttdata.product.model.BankProduct;
 import com.nttdata.product.service.BankProductService;
-import io.swagger.v3.oas.annotations.Operation;
-import io.swagger.v3.oas.annotations.Parameter;
+import com.nttdata.product.utils.BankProductMapper;
+import com.nttdata.product.utils.Constants;
 import lombok.RequiredArgsConstructor;
-import org.springframework.web.bind.annotation.*;
-import reactor.core.publisher.Flux;
+import org.openapitools.api.ProductsApi;
+import org.openapitools.model.BankProductBody;
+import org.openapitools.model.BankProductResponse;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.server.ServerWebExchange;
 import reactor.core.publisher.Mono;
 
+import javax.validation.Valid;
+
+import static com.nttdata.product.utils.BankProductMapper.*;
+
 @RestController
-@RequestMapping("/products")
 @RequiredArgsConstructor
-public class BankProductController {
+public class BankProductController implements ProductsApi {
+    private static final Logger log = LoggerFactory.getLogger(BankProductController.class);
 
     private final BankProductService service;
 
-    @Operation(summary = "Obtener todos los productos", description = "Devuelve la lista completa de productos bancarios")
-    @GetMapping
-    public Flux<BankProduct> getAll() {
-        return service.getAll();
+    @Override
+    public Mono<ResponseEntity<BankProductResponse>> getAllProducts(ServerWebExchange exchange) {
+        return service.getAll()
+                .collectList()            // convierte Flux<...> en Mono<List<...>>
+                .map(products -> toResponse(products, 200, Constants.SUCCESS_FIND_LIST_PRODUCT))
+                .map(ResponseEntity::ok)
+                .onErrorResume(e -> Mono.just(
+                        ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                                .body(new BankProductResponse()
+                                        .status(500)
+                                        .message("Error al obtener productos")
+                                        .products(null)
+                                )));
     }
 
-    @Operation(summary = "Obtener un producto por ID", description = "Busca un producto bancario usando su ID")
-    @GetMapping("/{id}")
-    public Mono<BankProduct> getById(
-            @Parameter(description = "ID del producto a consultar", required = true)
-            @PathVariable String id) {
-        return service.getById(id);
+    @Override
+    public Mono<ResponseEntity<BankProductResponse>> getProductById(String id, ServerWebExchange exchange) {
+        return service.getById(id)
+                .map(product -> toResponse(product, 200, Constants.SUCCESS_FIND_PRODUCT))
+                .map(ResponseEntity::ok)
+                .defaultIfEmpty(ResponseEntity.status(HttpStatus.NOT_FOUND)
+                        .body(new BankProductResponse()
+                                .status(404)
+                                .message(Constants.ERROR_FIND_PRODUCT)
+                                .products(null)))
+                .onErrorResume(e -> Mono.just(
+                        ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                                .body(new BankProductResponse()
+                                        .status(500)
+                                        .message(Constants.ERROR_INTERNAL)
+                                        .products(null))));
     }
 
-    @Operation(summary = "Crear un nuevo producto bancario", description = "Registra un nuevo producto (cuenta, crédito, tarjeta) asociado a un cliente")
-    @PostMapping
-    public Mono<BankProduct> create(
-            @Parameter(description = "Datos del producto bancario a crear", required = true)
-            @RequestBody BankProduct product) {
-        return service.create(product);
+
+    @Override
+    public Mono<ResponseEntity<BankProductResponse>> createProduct(
+            @Valid @RequestBody Mono<BankProductBody> request, ServerWebExchange exchange) {
+
+        return request
+                .doOnNext(req -> log.info("Request recibido: {}", req))
+                .map(BankProductMapper::toBankProduct)
+                .flatMap(service::create)
+                .map(product -> toResponse(product, 201, Constants.SUCCESS_CREATE_PRODUCT))
+                .map(ResponseEntity::ok)
+                .onErrorResume(e -> {
+                    log.error("Error interno: ", e);
+                    return Mono.just(
+                            ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                                    .body(new BankProductResponse()
+                                            .status(500)
+                                            .message(Constants.ERROR_INTERNAL)
+                                            .products(null)));
+                });
     }
 
-    @Operation(summary = "Actualizar un producto bancario", description = "Actualiza los datos de un producto existente mediante su ID")
-    @PutMapping("/{id}")
-    public Mono<BankProduct> update(
-            @Parameter(description = "ID del producto a actualizar", required = true)
-            @PathVariable String id,
-            @Parameter(description = "Datos actualizados del producto", required = true)
-            @RequestBody BankProduct product) {
-        return service.update(id, product);
+    @Override
+    public Mono<ResponseEntity<BankProductResponse>> updateProduct(
+            String id,
+            Mono<BankProductBody> request,
+            ServerWebExchange exchange) {
+
+        return request
+                .map(BankProductMapper::toBankProduct)
+                .flatMap(product -> service.update(id, product))
+                .map(product -> toResponse(product, 200, Constants.SUCCESS_UPDATE_PRODUCT))
+                .map(ResponseEntity::ok)
+                .onErrorResume(e -> Mono.just(
+                        ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                                .body(new BankProductResponse()
+                                        .status(500)
+                                        .message(Constants.ERROR_INTERNAL)
+                                        .products(null))));
     }
 
-    @Operation(summary = "Eliminar un producto bancario", description = "Elimina un producto por su ID")
-    @DeleteMapping("/{id}")
-    public Mono<Void> delete(
-            @Parameter(description = "ID del producto a eliminar", required = true)
-            @PathVariable String id) {
-        return service.delete(id);
+    @Override
+    public Mono<ResponseEntity<BankProductResponse>> deleteProduct(String id, ServerWebExchange exchange) {
+        return service.delete(id)
+                .map(product -> toResponse(200, Constants.SUCCESS_DELETE_PRODUCT))
+                .map(ResponseEntity::ok)
+                .defaultIfEmpty(ResponseEntity.status(HttpStatus.NOT_FOUND)
+                        .body(new BankProductResponse()
+                                .status(404)
+                                .message(Constants.ERROR_FIND_PRODUCT)
+                                .products(null)))
+                .onErrorResume(e -> Mono.just(
+                        ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                                .body(new BankProductResponse()
+                                        .status(500)
+                                        .message(Constants.ERROR_INTERNAL)
+                                        .products(null))));
     }
 }
