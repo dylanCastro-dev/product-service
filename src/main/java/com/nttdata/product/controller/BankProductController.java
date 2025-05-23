@@ -15,9 +15,6 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.server.ServerWebExchange;
 import reactor.core.publisher.Mono;
-
-import javax.validation.Valid;
-
 import static com.nttdata.product.utils.BankProductMapper.*;
 
 @RestController
@@ -30,7 +27,7 @@ public class BankProductController implements ProductsApi {
     @Override
     public Mono<ResponseEntity<BankProductResponse>> getAllProducts(ServerWebExchange exchange) {
         return service.getAll()
-                .collectList()            // convierte Flux<...> en Mono<List<...>>
+                .collectList()
                 .map(products -> toResponse(products, 200, Constants.SUCCESS_FIND_LIST_PRODUCT))
                 .map(ResponseEntity::ok)
                 .onErrorResume(e -> Mono.just(
@@ -63,14 +60,24 @@ public class BankProductController implements ProductsApi {
 
     @Override
     public Mono<ResponseEntity<BankProductResponse>> createProduct(
-            @Valid @RequestBody Mono<BankProductBody> request, ServerWebExchange exchange) {
+            @RequestBody Mono<BankProductBody> request, ServerWebExchange exchange) {
 
         return request
                 .doOnNext(req -> log.info("Request recibido: {}", req))
+                .doOnNext(BankProductMapper::validateBankProductBody)
                 .map(BankProductMapper::toBankProduct)
                 .flatMap(service::create)
                 .map(product -> toResponse(product, 201, Constants.SUCCESS_CREATE_PRODUCT))
                 .map(ResponseEntity::ok)
+                .onErrorResume(IllegalArgumentException.class, e -> {
+                    log.warn("Error detectado: {}", e.getMessage());
+                    return Mono.just(
+                            ResponseEntity.badRequest()
+                                    .body(new BankProductResponse()
+                                            .status(400)
+                                            .message("Error detectado: " + e.getMessage())
+                                            .products(null)));
+                })
                 .onErrorResume(e -> {
                     log.error("Error interno: ", e);
                     return Mono.just(
@@ -89,6 +96,8 @@ public class BankProductController implements ProductsApi {
             ServerWebExchange exchange) {
 
         return request
+                .doOnNext(req -> log.info("Request recibido: {}", req))
+                .doOnNext(BankProductMapper::validateBankProductBody)
                 .map(BankProductMapper::toBankProduct)
                 .flatMap(product -> service.update(id, product))
                 .map(product -> toResponse(product, 200, Constants.SUCCESS_UPDATE_PRODUCT))
@@ -106,11 +115,6 @@ public class BankProductController implements ProductsApi {
         return service.delete(id)
                 .map(product -> toResponse(200, Constants.SUCCESS_DELETE_PRODUCT))
                 .map(ResponseEntity::ok)
-                .defaultIfEmpty(ResponseEntity.status(HttpStatus.NOT_FOUND)
-                        .body(new BankProductResponse()
-                                .status(404)
-                                .message(Constants.ERROR_FIND_PRODUCT)
-                                .products(null)))
                 .onErrorResume(e -> Mono.just(
                         ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                                 .body(new BankProductResponse()
