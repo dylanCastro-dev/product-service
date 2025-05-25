@@ -19,7 +19,7 @@ public class GlobalExceptionHandler {
                 .badRequest()
                 .body(new BankProductResponse()
                         .status(400)
-                        .message("Error de validación: " + e.getMessage())
+                        .message(Constants.ERROR_VALIDATION_MESSAGE)
                         .products(null));
     }
 
@@ -30,7 +30,7 @@ public class GlobalExceptionHandler {
                 .status(500)
                 .body(new BankProductResponse()
                         .status(500)
-                        .message("Error interno del sistema")
+                        .message(Constants.ERROR_INTERNAL)
                         .products(null));
     }
 }

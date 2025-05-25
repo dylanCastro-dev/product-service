@@ -7,13 +7,14 @@ import com.nttdata.product.model.Type.CustomerType;
 import com.nttdata.product.model.Type.ProductType;
 import com.nttdata.product.repository.BankProductRepository;
 import com.nttdata.product.service.BankProductService;
+import com.nttdata.product.utils.Constants;
+import com.nttdata.product.utils.Utils;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.web.bind.annotation.ExceptionHandler;
-import org.springframework.web.reactive.function.client.WebClient;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
@@ -22,10 +23,6 @@ import reactor.core.publisher.Mono;
 public class BankProductServiceImpl implements BankProductService {
     private static final Logger log = LoggerFactory.getLogger(BankProductServiceImpl.class);
     private final BankProductRepository repository;
-
-    private final WebClient webClient = WebClient.builder()
-            .baseUrl("http://localhost:8080") // URL de customer-service
-            .build();
 
     @Override
     public Flux<BankProduct> getAll() {
@@ -39,7 +36,7 @@ public class BankProductServiceImpl implements BankProductService {
 
     @Override
     public Mono<BankProduct> create(BankProduct product) {
-        return webClient.get()
+        return Utils.getCustomerService().get()
                 .uri("/customers/{id}", product.getCustomerId())
                 .retrieve()
                 .bodyToMono(CustomerDTO.class)
@@ -55,7 +52,7 @@ public class BankProductServiceImpl implements BankProductService {
 
         // Valida si es cliente es empresarial con cuenta de ahorro o plazo fijo
         if (isRestrictedProductForBusiness(customer, product)) {
-            return Mono.error(new IllegalArgumentException("Los clientes comerciales no pueden tener cuentas de ahorro o de plazo fijo."));
+            return Mono.error(new IllegalArgumentException(Constants.ERROR_BUSINESS_CANNOT_HAVE_PASSIVE_ACCOUNTS));
         }
 
         // Valida si es cliente empresarial con cuenta corriente
@@ -93,11 +90,6 @@ public class BankProductServiceImpl implements BankProductService {
         return repository.deleteById(id);
     }
 
-    @ExceptionHandler(IllegalArgumentException.class)
-    public Mono<ResponseEntity<String>> handleBadRequest(IllegalArgumentException ex) {
-        return Mono.just(ResponseEntity.badRequest().body(ex.getMessage()));
-    }
-
     private boolean isPersonalCustomerWithPersonalLoan(CustomerDTO customer, BankProduct product) {
         return customer.getType() == CustomerType.PERSONAL &&
                 product.getType() == ProductType.CREDITO_PERSONAL;
@@ -109,8 +101,7 @@ public class BankProductServiceImpl implements BankProductService {
                 .hasElements()
                 .flatMap(exists -> {
                     if (exists) {
-                        return Mono.error(new IllegalArgumentException(
-                                "Los clientes personales sólo pueden tener un producto de crédito personal."));
+                        return Mono.error(new IllegalArgumentException(Constants.ERROR_PERSONAL_ONE_CREDIT_ONLY));
                     }
                     return repository.save(product);
                 });
@@ -128,7 +119,7 @@ public class BankProductServiceImpl implements BankProductService {
 
     private Mono<BankProduct> validateBusinessAccountHolders(BankProduct product) {
         if (product.getHolders() == null || product.getHolders().isEmpty()) {
-            return Mono.error(new IllegalArgumentException("Las cuentas corrientes comerciales deben tener al menos un titular."));
+            return Mono.error(new IllegalArgumentException(Constants.ERROR_BUSINESS_CURRENT_ACCOUNT_REQUIRES_HOLDER));
         }
         return repository.save(product);
     }
@@ -144,8 +135,7 @@ public class BankProductServiceImpl implements BankProductService {
                 .hasElements()
                 .flatMap(exists -> {
                     if (exists) {
-                        return Mono.error(new IllegalArgumentException(
-                                "Los clientes personales solo pueden tener una cuenta de tipo " + product.getType().name() + "."));
+                        return Mono.error(new IllegalArgumentException(String.format(Constants.ERROR_PERSONAL_UNIQUE_PASSIVE_ACCOUNT,product.getType().name())));
                     }
                     return repository.save(product);
                 });

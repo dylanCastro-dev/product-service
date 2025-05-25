@@ -5,11 +5,20 @@ import com.nttdata.product.service.impl.BankProductServiceImpl;
 import org.openapitools.model.BankProductBody;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.web.reactive.function.client.WebClient;
 
 import java.math.BigDecimal;
 
 public class Utils {
     private static final Logger log = LoggerFactory.getLogger(Utils.class);
+
+    private static final WebClient CUSTOMER_CLIENT = WebClient.builder()
+            .baseUrl("http://localhost:8080") // URL de customer-service
+            .build();
+
+    public static WebClient getCustomerService() {
+        return CUSTOMER_CLIENT;
+    }
 
     public static void validateBankProductBody(BankProductBody body) {
         StringBuilder errors = new StringBuilder();
