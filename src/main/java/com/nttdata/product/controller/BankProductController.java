@@ -3,6 +3,7 @@ package com.nttdata.product.controller;
 import com.nttdata.product.service.BankProductService;
 import com.nttdata.product.utils.BankProductMapper;
 import com.nttdata.product.utils.Constants;
+import com.nttdata.product.utils.Utils;
 import lombok.RequiredArgsConstructor;
 import org.openapitools.api.ProductsApi;
 import org.openapitools.model.BankProductBody;
@@ -29,14 +30,7 @@ public class BankProductController implements ProductsApi {
         return service.getAll()
                 .collectList()
                 .map(products -> toResponse(products, 200, Constants.SUCCESS_FIND_LIST_PRODUCT))
-                .map(ResponseEntity::ok)
-                .onErrorResume(e -> Mono.just(
-                        ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                                .body(new BankProductResponse()
-                                        .status(500)
-                                        .message("Error al obtener productos")
-                                        .products(null)
-                                )));
+                .map(ResponseEntity::ok);
     }
 
     @Override
@@ -48,13 +42,7 @@ public class BankProductController implements ProductsApi {
                         .body(new BankProductResponse()
                                 .status(404)
                                 .message(Constants.ERROR_FIND_PRODUCT)
-                                .products(null)))
-                .onErrorResume(e -> Mono.just(
-                        ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                                .body(new BankProductResponse()
-                                        .status(500)
-                                        .message(Constants.ERROR_INTERNAL)
-                                        .products(null))));
+                                .products(null)));
     }
 
 
@@ -63,30 +51,12 @@ public class BankProductController implements ProductsApi {
             @RequestBody Mono<BankProductBody> request, ServerWebExchange exchange) {
 
         return request
-                .doOnNext(req -> log.info("Request recibido: {}", req))
-                .doOnNext(BankProductMapper::validateBankProductBody)
+                .doOnNext(req -> log.debug("Request recibido: {}", req))
+                .doOnNext(Utils::validateBankProductBody)
                 .map(BankProductMapper::toBankProduct)
                 .flatMap(service::create)
                 .map(product -> toResponse(product, 201, Constants.SUCCESS_CREATE_PRODUCT))
-                .map(ResponseEntity::ok)
-                .onErrorResume(IllegalArgumentException.class, e -> {
-                    log.warn("Error detectado: {}", e.getMessage());
-                    return Mono.just(
-                            ResponseEntity.badRequest()
-                                    .body(new BankProductResponse()
-                                            .status(400)
-                                            .message("Error detectado: " + e.getMessage())
-                                            .products(null)));
-                })
-                .onErrorResume(e -> {
-                    log.error("Error interno: ", e);
-                    return Mono.just(
-                            ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                                    .body(new BankProductResponse()
-                                            .status(500)
-                                            .message(Constants.ERROR_INTERNAL)
-                                            .products(null)));
-                });
+                .map(ResponseEntity::ok);
     }
 
     @Override
@@ -96,30 +66,18 @@ public class BankProductController implements ProductsApi {
             ServerWebExchange exchange) {
 
         return request
-                .doOnNext(req -> log.info("Request recibido: {}", req))
-                .doOnNext(BankProductMapper::validateBankProductBody)
+                .doOnNext(req -> log.debug("Request recibido: {}", req))
+                .doOnNext(Utils::validateBankProductBody)
                 .map(BankProductMapper::toBankProduct)
                 .flatMap(product -> service.update(id, product))
                 .map(product -> toResponse(product, 200, Constants.SUCCESS_UPDATE_PRODUCT))
-                .map(ResponseEntity::ok)
-                .onErrorResume(e -> Mono.just(
-                        ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                                .body(new BankProductResponse()
-                                        .status(500)
-                                        .message(Constants.ERROR_INTERNAL)
-                                        .products(null))));
+                .map(ResponseEntity::ok);
     }
 
     @Override
     public Mono<ResponseEntity<BankProductResponse>> deleteProduct(String id, ServerWebExchange exchange) {
         return service.delete(id)
                 .map(product -> toResponse(200, Constants.SUCCESS_DELETE_PRODUCT))
-                .map(ResponseEntity::ok)
-                .onErrorResume(e -> Mono.just(
-                        ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                                .body(new BankProductResponse()
-                                        .status(500)
-                                        .message(Constants.ERROR_INTERNAL)
-                                        .products(null))));
+                .map(ResponseEntity::ok);
     }
 }

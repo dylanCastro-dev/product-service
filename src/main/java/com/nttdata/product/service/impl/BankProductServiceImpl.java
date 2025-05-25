@@ -1,5 +1,6 @@
 package com.nttdata.product.service.impl;
 
+import com.nttdata.product.controller.BankProductController;
 import com.nttdata.product.model.BankProduct;
 import com.nttdata.product.model.Dto.CustomerDTO;
 import com.nttdata.product.model.Type.CustomerType;
@@ -7,6 +8,8 @@ import com.nttdata.product.model.Type.ProductType;
 import com.nttdata.product.repository.BankProductRepository;
 import com.nttdata.product.service.BankProductService;
 import lombok.RequiredArgsConstructor;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.web.bind.annotation.ExceptionHandler;
@@ -17,6 +20,7 @@ import reactor.core.publisher.Mono;
 @Service
 @RequiredArgsConstructor
 public class BankProductServiceImpl implements BankProductService {
+    private static final Logger log = LoggerFactory.getLogger(BankProductServiceImpl.class);
     private final BankProductRepository repository;
 
     private final WebClient webClient = WebClient.builder()
@@ -141,7 +145,7 @@ public class BankProductServiceImpl implements BankProductService {
                 .flatMap(exists -> {
                     if (exists) {
                         return Mono.error(new IllegalArgumentException(
-                                "Personal customers can only have one " + product.getType().name() + " account."));
+                                "Los clientes personales solo pueden tener una cuenta de tipo " + product.getType().name() + "."));
                     }
                     return repository.save(product);
                 });
