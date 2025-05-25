@@ -7,7 +7,9 @@ public class Constants {
     public static final String SUCCESS_FIND_PRODUCT = "Producto encontrado correctamente";
     public static final String SUCCESS_DELETE_PRODUCT = "Producto eliminado correctamente";
     public static final String SUCCESS_UPDATE_PRODUCT = "Producto actualizdo correctamente";
-    public static final String ERROR_FIND_PRODUCT  = "Producto no encontrado";
+    public static final String ERROR_FIND_TRANSACTION = "No se encontró la transacción solicitada.";
+    public static final String ERROR_FIND_PRODUCT = "No se encontró el producto solicitado.";
+    public static final String ERROR_FIND_CUSTOMER = "No se encontró el cliente solicitado.";
     public static final String ERROR_INTERNAL  = "Hubo un problema con la solicitud";
     public static final String ERROR_VALIDATION_MESSAGE = "Error de validación: %s";
 

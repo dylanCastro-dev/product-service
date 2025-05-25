@@ -8,10 +8,12 @@ import com.nttdata.product.model.Type.ProductType;
 import com.nttdata.product.repository.BankProductRepository;
 import com.nttdata.product.service.BankProductService;
 import com.nttdata.product.utils.Constants;
+import com.nttdata.product.utils.EmptyResultException;
 import com.nttdata.product.utils.Utils;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.web.bind.annotation.ExceptionHandler;
@@ -39,6 +41,12 @@ public class BankProductServiceImpl implements BankProductService {
         return Utils.getCustomerService().get()
                 .uri("/customers/{id}", product.getCustomerId())
                 .retrieve()
+                .onStatus(HttpStatus::is4xxClientError, response -> {
+                    if (response.statusCode() == HttpStatus.NOT_FOUND) {
+                        return Mono.error(new EmptyResultException(Constants.ERROR_FIND_CUSTOMER));
+                    }
+                    return Mono.error(new RuntimeException("Error en la solicitud: " + response.statusCode()));
+                })
                 .bodyToMono(CustomerDTO.class)
                 .flatMap(customer -> validateRules(customer, product));
     }
