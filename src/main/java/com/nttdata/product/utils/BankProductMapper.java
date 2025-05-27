@@ -4,14 +4,17 @@ import com.nttdata.product.model.BankProduct;
 import com.nttdata.product.model.Type.ProductType;
 import org.openapitools.model.BankProductBody;
 import org.openapitools.model.BankProductResponse;
+import org.openapitools.model.BankProductResponse;
+import org.openapitools.model.TemplateResponse;
 
 import java.math.BigDecimal;
 import java.util.List;
 import java.util.stream.Collectors;
 
 public class BankProductMapper {
-    public static BankProductBody toBankProductBody(BankProduct product) {
-        return new BankProductBody()
+    public static BankProductResponse toBankProductResponse(BankProduct product) {
+        return new BankProductResponse()
+                .id(product.getId())
                 .customerId(product.getCustomerId())
                 .type(product.getType().name())
                 .name(product.getName())
@@ -39,26 +42,26 @@ public class BankProductMapper {
                 .build();
     }
 
-    public static BankProductResponse toResponse(BankProduct product, int status, String message) {
-        return new BankProductResponse()
+    public static TemplateResponse toResponse(BankProduct product, int status, String message) {
+        return new TemplateResponse()
                 .status(status)
                 .message(message)
-                .addProductsItem(toBankProductBody(product));
+                .addProductsItem(toBankProductResponse(product));
     }
 
-    public static BankProductResponse toResponse(List<BankProduct> lstProduct, int status, String message) {
-        List<BankProductBody> products = lstProduct.stream()
-                .map(BankProductMapper::toBankProductBody)
+    public static TemplateResponse toResponse(List<BankProduct> lstProduct, int status, String message) {
+        List<BankProductResponse> products = lstProduct.stream()
+                .map(BankProductMapper::toBankProductResponse)
                 .collect(Collectors.toList());
 
-        return new BankProductResponse()
+        return new TemplateResponse()
                 .status(status)
                 .message(message)
                 .products(products);
     }
 
-    public static BankProductResponse toResponse(int status, String message) {
-        return new BankProductResponse()
+    public static TemplateResponse toResponse(int status, String message) {
+        return new TemplateResponse()
                 .status(status)
                 .message(message)
                 .products(null);

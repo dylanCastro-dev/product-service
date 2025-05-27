@@ -7,7 +7,7 @@ import com.nttdata.product.utils.Utils;
 import lombok.RequiredArgsConstructor;
 import org.openapitools.api.ProductsApi;
 import org.openapitools.model.BankProductBody;
-import org.openapitools.model.BankProductResponse;
+import org.openapitools.model.TemplateResponse;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
@@ -26,7 +26,7 @@ public class BankProductController implements ProductsApi {
     private final BankProductService service;
 
     @Override
-    public Mono<ResponseEntity<BankProductResponse>> getAllProducts(ServerWebExchange exchange) {
+    public Mono<ResponseEntity<TemplateResponse>> getAllProducts(ServerWebExchange exchange) {
         return service.getAll()
                 .collectList()
                 .map(products -> toResponse(products, 200, Constants.SUCCESS_FIND_LIST_PRODUCT))
@@ -34,12 +34,12 @@ public class BankProductController implements ProductsApi {
     }
 
     @Override
-    public Mono<ResponseEntity<BankProductResponse>> getProductById(String id, ServerWebExchange exchange) {
+    public Mono<ResponseEntity<TemplateResponse>> getProductById(String id, ServerWebExchange exchange) {
         return service.getById(id)
                 .map(product -> toResponse(product, 200, Constants.SUCCESS_FIND_PRODUCT))
                 .map(ResponseEntity::ok)
                 .defaultIfEmpty(ResponseEntity.status(HttpStatus.NOT_FOUND)
-                        .body(new BankProductResponse()
+                        .body(new TemplateResponse()
                                 .status(404)
                                 .message(Constants.ERROR_FIND_PRODUCT)
                                 .products(null)));
@@ -47,7 +47,7 @@ public class BankProductController implements ProductsApi {
 
 
     @Override
-    public Mono<ResponseEntity<BankProductResponse>> createProduct(
+    public Mono<ResponseEntity<TemplateResponse>> createProduct(
             @RequestBody Mono<BankProductBody> request, ServerWebExchange exchange) {
 
         return request
@@ -60,7 +60,7 @@ public class BankProductController implements ProductsApi {
     }
 
     @Override
-    public Mono<ResponseEntity<BankProductResponse>> updateProduct(
+    public Mono<ResponseEntity<TemplateResponse>> updateProduct(
             String id,
             Mono<BankProductBody> request,
             ServerWebExchange exchange) {
@@ -75,7 +75,7 @@ public class BankProductController implements ProductsApi {
     }
 
     @Override
-    public Mono<ResponseEntity<BankProductResponse>> deleteProduct(String id, ServerWebExchange exchange) {
+    public Mono<ResponseEntity<TemplateResponse>> deleteProduct(String id, ServerWebExchange exchange) {
         return service.delete(id)
                 .map(product -> toResponse(200, Constants.SUCCESS_DELETE_PRODUCT))
                 .map(ResponseEntity::ok);

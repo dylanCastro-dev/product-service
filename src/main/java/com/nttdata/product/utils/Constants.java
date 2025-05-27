@@ -25,4 +25,12 @@ public class Constants {
 
     public static final String ERROR_PERSONAL_UNIQUE_PASSIVE_ACCOUNT =
             "Los clientes personales solo pueden tener una cuenta de tipo %s.";
+
+    public static final String ERROR_SAVINGS_NO_MAINTENANCE_FEE = "Las cuentas de ahorro no deben tener comisión de mantenimiento.";
+    public static final String ERROR_SAVINGS_REQUIRE_MONTHLY_LIMIT = "Las cuentas de ahorro deben tener un límite mensual de movimientos mayor a 0.";
+    public static final String ERROR_CURRENT_ACCOUNT_REQUIRES_FEE = "Las cuentas corrientes deben tener comisión de mantenimiento mayor a 0.";
+    public static final String ERROR_CURRENT_ACCOUNT_NO_MONTHLY_LIMIT = "Las cuentas corrientes no deben tener límite de movimientos mensuales.";
+    public static final String ERROR_FIXED_TERM_NO_MAINTENANCE_FEE = "Las cuentas a plazo fijo no deben tener comisión de mantenimiento.";
+    public static final String ERROR_FIXED_TERM_REQUIRE_TRANSACTION_DAY = "Las cuentas a plazo fijo deben tener definido un día de transacción entre 1 y 31.";
+    public static final String ERROR_FIXED_TERM_REQUIRE_MONTHLY_LIMIT = "Las cuentas a plazo fijo deben tener un límite mensual de movimientos igual a 1.";
 }

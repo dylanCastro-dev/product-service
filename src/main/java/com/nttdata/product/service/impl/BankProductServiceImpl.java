@@ -3,6 +3,7 @@ package com.nttdata.product.service.impl;
 import com.nttdata.product.controller.BankProductController;
 import com.nttdata.product.model.BankProduct;
 import com.nttdata.product.model.Dto.CustomerDTO;
+import com.nttdata.product.model.Dto.CustomerResponse;
 import com.nttdata.product.model.Type.CustomerType;
 import com.nttdata.product.model.Type.ProductType;
 import com.nttdata.product.repository.BankProductRepository;
@@ -47,36 +48,21 @@ public class BankProductServiceImpl implements BankProductService {
                     }
                     return Mono.error(new RuntimeException("Error en la solicitud: " + response.statusCode()));
                 })
-                .bodyToMono(CustomerDTO.class)
-                .flatMap(customer -> validateRules(customer, product));
+                .bodyToMono(CustomerResponse.class)
+                .flatMap(response -> {
+                    CustomerDTO customer = response.getCustomers().get(0);
+                    return validateRules(customer, product);
+                });
     }
 
     private Mono<BankProduct> validateRules(CustomerDTO customer, BankProduct product) {
-        // Valida si es cliente personal con tarjeta de credito
-        if (isPersonalCustomerWithPersonalLoan(customer, product)) {
-            // Un cliente personal solo puede tener un crédito personal
-            return validateSinglePersonalLoan(product);
-        }
-
-        // Valida si es cliente es empresarial con cuenta de ahorro o plazo fijo
-        if (isRestrictedProductForBusiness(customer, product)) {
-            return Mono.error(new IllegalArgumentException(Constants.ERROR_BUSINESS_CANNOT_HAVE_PASSIVE_ACCOUNTS));
-        }
-
-        // Valida si es cliente empresarial con cuenta corriente
-        if (isBusinessCurrentAccount(customer, product)) {
-            // Las cuentas corrientes empresariales deben tener al menos un titular definido
-            return validateBusinessAccountHolders(product);
-        }
-
-        // Valida si es cliente es personal con cuenta de ahorro o corriente
-        if (isUniquePassiveAccountForPersonal(customer, product)) {
-            // Un cliente personal no puede tener más de un producto pasivo del mismo tipo
-            return validateUniquePassiveAccount(product);
-        }
-
-        // Si cumple todas las reglas, se guarda el producto
-        return repository.save(product);
+        return Mono.empty()
+                .then(isPassiveProduct(product.getType()) ? validatePassiveProductProperties(product) : Mono.empty()) //Valida las reglas específicas de negocio para productos pasivos
+                .then(isPersonalCustomerWithPersonalLoan(customer, product) ? validateSinglePersonalLoan(product) : Mono.empty()) // Valida si es cliente personal con tarjeta de credito // Un cliente personal solo puede tener un crédito personal
+                .then(isRestrictedProductForBusiness(customer, product) ? Mono.error(new IllegalArgumentException(Constants.ERROR_BUSINESS_CANNOT_HAVE_PASSIVE_ACCOUNTS)) : Mono.empty()) // Valida si es cliente es empresarial con cuenta de ahorro o plazo fijo
+                .then(isBusinessCurrentAccount(customer, product) ? validateBusinessAccountHolders(product) : Mono.empty()) // Valida si es cliente empresarial con cuenta corriente // Las cuentas corrientes empresariales deben tener al menos un titular definido
+                .then(isUniquePassiveAccountForPersonal(customer, product) ? validateUniquePassiveAccount(product) : Mono.empty()) // Valida si es cliente es personal con cuenta de ahorro o corriente // Un cliente personal no puede tener más de un producto pasivo del mismo tipo
+                .then(repository.save(product)); // Si cumple todas las reglas, se guarda el producto
     }
 
     @Override
@@ -111,8 +97,49 @@ public class BankProductServiceImpl implements BankProductService {
                     if (exists) {
                         return Mono.error(new IllegalArgumentException(Constants.ERROR_PERSONAL_ONE_CREDIT_ONLY));
                     }
-                    return repository.save(product);
+                    return Mono.empty();
                 });
+    }
+
+    private Mono<BankProduct> validatePassiveProductProperties(BankProduct product) {
+        switch (product.getType()) {
+            case AHORRO:
+                if (product.getMaintenanceFee() != null && product.getMaintenanceFee() > 0) {
+                    return Mono.error(new IllegalArgumentException(Constants.ERROR_SAVINGS_NO_MAINTENANCE_FEE));
+                }
+                if (product.getMonthlyLimit() == null || product.getMonthlyLimit() <= 0) {
+                    return Mono.error(new IllegalArgumentException(Constants.ERROR_SAVINGS_REQUIRE_MONTHLY_LIMIT));
+                }
+                break;
+
+            case CORRIENTE:
+                if (product.getMaintenanceFee() == null || product.getMaintenanceFee() <= 0) {
+                    return Mono.error(new IllegalArgumentException(Constants.ERROR_CURRENT_ACCOUNT_REQUIRES_FEE));
+                }
+                if (product.getMonthlyLimit() != null && product.getMonthlyLimit() > 0) {
+                    return Mono.error(new IllegalArgumentException(Constants.ERROR_CURRENT_ACCOUNT_NO_MONTHLY_LIMIT));
+                }
+                break;
+
+            case PLAZO_FIJO:
+                if (product.getMaintenanceFee() != null && product.getMaintenanceFee() > 0) {
+                    return Mono.error(new IllegalArgumentException(Constants.ERROR_FIXED_TERM_NO_MAINTENANCE_FEE));
+                }
+
+                if (product.getMonthlyLimit() != null && product.getMonthlyLimit() != 1) {
+                    return Mono.error(new IllegalArgumentException(Constants.ERROR_FIXED_TERM_REQUIRE_MONTHLY_LIMIT));
+                }
+                if (product.getAllowedTransactionDay() == null || product.getAllowedTransactionDay() < 1 || product.getAllowedTransactionDay() > 31) {
+                    return Mono.error(new IllegalArgumentException(Constants.ERROR_FIXED_TERM_REQUIRE_TRANSACTION_DAY));
+                }
+                break;
+
+            default:
+                // No aplica a productos no pasivos
+                break;
+        }
+
+        return Mono.empty();
     }
 
     private boolean isRestrictedProductForBusiness(CustomerDTO customer, BankProduct product) {
@@ -129,7 +156,7 @@ public class BankProductServiceImpl implements BankProductService {
         if (product.getHolders() == null || product.getHolders().isEmpty()) {
             return Mono.error(new IllegalArgumentException(Constants.ERROR_BUSINESS_CURRENT_ACCOUNT_REQUIRES_HOLDER));
         }
-        return repository.save(product);
+        return Mono.empty();
     }
 
     private boolean isUniquePassiveAccountForPersonal(CustomerDTO customer, BankProduct product) {
@@ -145,7 +172,13 @@ public class BankProductServiceImpl implements BankProductService {
                     if (exists) {
                         return Mono.error(new IllegalArgumentException(String.format(Constants.ERROR_PERSONAL_UNIQUE_PASSIVE_ACCOUNT,product.getType().name())));
                     }
-                    return repository.save(product);
+                    return Mono.empty();
                 });
+    }
+
+    private boolean isPassiveProduct(ProductType type) {
+        return type == ProductType.AHORRO ||
+                type == ProductType.CORRIENTE ||
+                type == ProductType.PLAZO_FIJO;
     }
 }

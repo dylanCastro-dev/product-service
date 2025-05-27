@@ -58,20 +58,6 @@ public class Utils {
             errors.append("monthlyLimit debe ser mayor o igual a 0. ");
         }
 
-        if (body.getAllowedTransactionDay() == null ||
-                body.getAllowedTransactionDay() < 1 || body.getAllowedTransactionDay() > 31) {
-            errors.append("allowedTransactionDay debe estar entre 1 y 31. ");
-        }
-
-        // Validar arrays requeridos no vacíos
-        if (body.getHolders() == null || body.getHolders().isEmpty()) {
-            errors.append("holders no puede estar vacío. ");
-        }
-
-        if (body.getSigners() == null || body.getSigners().isEmpty()) {
-            errors.append("signers no puede estar vacío. ");
-        }
-
         // Lanzar excepción si se detectaron errores
         if (errors.length() > 0) {
             throw new IllegalArgumentException(errors.toString().trim());
