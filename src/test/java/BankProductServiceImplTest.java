@@ -76,7 +76,7 @@ class BankProductServiceImplTest {
         // Producto a crear
         BankProduct product = new BankProduct();
         product.setCustomerId("123");
-        product.setType(ProductType.CREDITO_PERSONAL);
+        product.setType(ProductType.CREDIT);
 
         // Cliente simulado
         CustomerDTO customer = new CustomerDTO();
@@ -116,7 +116,7 @@ class BankProductServiceImplTest {
         existing.setId("abc");
 
         BankProduct updated = new BankProduct();
-        updated.setType(ProductType.AHORRO);
+        updated.setType(ProductType.SAVINGS);
         updated.setCustomerId("cust1");
 
         Mockito.when(repository.findById("abc")).thenReturn(Mono.just(existing));

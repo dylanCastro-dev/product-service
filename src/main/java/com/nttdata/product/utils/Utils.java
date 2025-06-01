@@ -1,5 +1,12 @@
 package com.nttdata.product.utils;
 
+
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.nttdata.product.model.Details.CurrentAccount;
+import com.nttdata.product.model.Details.FixedTermAccount;
+import com.nttdata.product.model.Details.ProductDetails;
+import com.nttdata.product.model.Details.SavingsAccount;
+import com.nttdata.product.model.Details.CreditProduct;
 import com.nttdata.product.model.Type.ProductType;
 import org.openapitools.model.BankProductBody;
 import org.slf4j.Logger;
@@ -7,10 +14,18 @@ import org.slf4j.LoggerFactory;
 import org.springframework.web.reactive.function.client.WebClient;
 
 import java.math.BigDecimal;
+import java.util.Map;
 import java.util.function.Supplier;
 
 public class Utils {
     private static final Logger log = LoggerFactory.getLogger(Utils.class);
+    public static final Map<ProductType, Class<? extends ProductDetails>> expectedDetailsByType = Map.of(
+            ProductType.SAVINGS, SavingsAccount.class,
+            ProductType.CURRENT, CurrentAccount.class,
+            ProductType.FIXED_TERM, FixedTermAccount.class,
+            ProductType.CREDIT, CreditProduct.class
+    );
+
     private static Supplier<WebClient> customerService =
             () -> WebClient.builder()
                     .baseUrl("http://localhost:8080") // URL del customer-service
@@ -39,7 +54,7 @@ public class Utils {
                 ProductType.valueOf(body.getType().trim().toUpperCase());
             } catch (IllegalArgumentException ex) {
                 errors.append("type debe ser uno de los valores permitidos: " +
-                        "AHORRO, CORRIENTE, PLAZO_FIJO, CREDITO_PERSONAL, CREDITO_EMPRESARIAL, TARJETA_CREDITO. ");
+                        "AHORRO, CORRIENTE, PLAZO_FIJO, CREDITO. ");
             }
         }
 
@@ -51,21 +66,37 @@ public class Utils {
             errors.append("balance debe ser mayor o igual a 0. ");
         }
 
-        if (body.getMaintenanceFee() == null || body.getMaintenanceFee() < 0) {
-            errors.append("maintenanceFee debe ser mayor o igual a 0. ");
+        if (body.getDetails() != null) {
+            ObjectMapper mapper = new ObjectMapper();
+
+            try {
+                switch (ProductType.valueOf(body.getType())) {
+                    case SAVINGS:
+                        mapper.convertValue(body.getDetails(), SavingsAccount.class);
+                        break;
+                    case CREDIT:
+                        mapper.convertValue(body.getDetails(), CreditProduct.class);
+                        break;
+                    case CURRENT:
+                        mapper.convertValue(body.getDetails(), CurrentAccount.class);
+                        break;
+                    case FIXED_TERM:
+                        mapper.convertValue(body.getDetails(), FixedTermAccount.class);
+                        break;
+                    default:
+                        errors.append("Tipo no soportado: ").append(body.getType()).append(". ");
+                }
+            } catch (IllegalArgumentException | ClassCastException ex) {
+                errors.append("Los campos de 'details' no corresponden a la clase esperada para el tipo ")
+                        .append(body.getType()).append(". ");
+            }
+
+            // Lanzar excepción si se detectaron errores
+            if (errors.length() > 0) {
+                throw new IllegalArgumentException(errors.toString().trim());
+            }
+
         }
 
-        if (body.getCreditLimit() == null || body.getCreditLimit().compareTo(BigDecimal.ZERO) < 0) {
-            errors.append("creditLimit debe ser mayor o igual a 0. ");
-        }
-
-        if (body.getMonthlyLimit() == null || body.getMonthlyLimit() < 0) {
-            errors.append("monthlyLimit debe ser mayor o igual a 0. ");
-        }
-
-        // Lanzar excepción si se detectaron errores
-        if (errors.length() > 0) {
-            throw new IllegalArgumentException(errors.toString().trim());
-        }
     }
 }

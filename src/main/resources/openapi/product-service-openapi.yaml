@@ -115,7 +115,7 @@ components:
         type:
           type: string
           description: Tipo de producto bancario
-          example: "[ AHORRO, CORRIENTE, PLAZO_FIJO, CREDITO_PERSONAL, CREDITO_EMPRESARIAL, TARJETA_CREDITO ]"
+          example: SAVINGS
         name:
           type: string
           description: Nombre descriptivo del producto
@@ -125,36 +125,12 @@ components:
           format: decimal
           description: Saldo actual del producto
           example: 1000.50
-        maintenanceFee:
-          type: number
-          format: double
-          description: Monto de la comisión de mantenimiento
-          example: 5.00
-        monthlyLimit:
-          type: integer
-          description: Límite mensual de movimientos permitidos
-          example: 5
-        creditLimit:
-          type: number
-          format: decimal
-          description: Límite de crédito para tarjetas
-          example: 5000.00
-        holders:
-          type: array
-          description: Titulares de la cuenta empresarial
-          items:
-            type: string
-          example: [ "12345678", "87654321" ]
-        signers:
-          type: array
-          description: Firmantes autorizados
-          items:
-            type: string
-          example: [ "99887766" ]
-        allowedTransactionDay:
-          type: integer
-          description: Dia de operacion permitido
-          example: 5
+        details:
+          type: object
+          description: Detalles del producto como JSON genérico
+          example:
+            maintenanceFee: 0
+            monthlyLimit: 2
 
     BankProductResponse:
       type: object
@@ -170,7 +146,7 @@ components:
         type:
           type: string
           description: Tipo de producto bancario
-          example: "[ AHORRO, CORRIENTE, PLAZO_FIJO, CREDITO_PERSONAL, CREDITO_EMPRESARIAL, TARJETA_CREDITO ]"
+          example: SAVINGS
         name:
           type: string
           description: Nombre descriptivo del producto
@@ -180,36 +156,12 @@ components:
           format: decimal
           description: Saldo actual del producto
           example: 1000.50
-        maintenanceFee:
-          type: number
-          format: double
-          description: Monto de la comisión de mantenimiento
-          example: 5.00
-        monthlyLimit:
-          type: integer
-          description: Límite mensual de movimientos permitidos
-          example: 5
-        creditLimit:
-          type: number
-          format: decimal
-          description: Límite de crédito para tarjetas
-          example: 5000.00
-        holders:
-          type: array
-          description: Titulares de la cuenta empresarial
-          items:
-            type: string
-          example: [ "12345678", "87654321" ]
-        signers:
-          type: array
-          description: Firmantes autorizados
-          items:
-            type: string
-          example: [ "99887766" ]
-        allowedTransactionDay:
-          type: integer
-          description: Dia de operacion permitido
-          example: 5
+        details:
+          type: object
+          description: Detalles del producto como JSON genérico
+          example:
+            maintenanceFee: 0
+            monthlyLimit: 2
 
     TemplateResponse:
       type: object

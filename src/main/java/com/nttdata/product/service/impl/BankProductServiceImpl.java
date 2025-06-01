@@ -1,6 +1,9 @@
 package com.nttdata.product.service.impl;
 
 import com.nttdata.product.model.BankProduct;
+import com.nttdata.product.model.Details.CurrentAccount;
+import com.nttdata.product.model.Details.FixedTermAccount;
+import com.nttdata.product.model.Details.SavingsAccount;
 import com.nttdata.product.model.Dto.CustomerDTO;
 import com.nttdata.product.model.Dto.CustomerResponse;
 import com.nttdata.product.model.Type.CustomerType;
@@ -84,12 +87,11 @@ public class BankProductServiceImpl implements BankProductService {
     public Mono<BankProduct> update(String id, BankProduct product) {
         return repository.findById(id)
                 .flatMap(existing -> {
-                    existing.setType(product.getType());
-                    existing.setBalance(product.getBalance());
                     existing.setCustomerId(product.getCustomerId());
-                    existing.setMaintenanceFee(product.getMaintenanceFee());
-                    existing.setMonthlyLimit(product.getMonthlyLimit());
+                    existing.setType(product.getType());
                     existing.setName(product.getName());
+                    existing.setBalance(product.getBalance());
+                    existing.setDetails(product.getDetails());
                     return repository.save(existing);
                 });
     }
@@ -101,12 +103,12 @@ public class BankProductServiceImpl implements BankProductService {
 
     private boolean isPersonalCustomerWithPersonalLoan(CustomerDTO customer, BankProduct product) {
         return customer.getType() == CustomerType.PERSONAL &&
-                product.getType() == ProductType.CREDITO_PERSONAL;
+                product.getType() == ProductType.CREDIT;
     }
 
     private Mono<BankProduct> validateSinglePersonalLoan(BankProduct product) {
         return repository.findByCustomerId(product.getCustomerId())
-                .filter(p -> p.getType() == ProductType.CREDITO_PERSONAL)
+                .filter(p -> p.getType() == ProductType.CREDIT)
                 .hasElements()
                 .flatMap(exists -> {
                     if (exists) {
@@ -118,35 +120,44 @@ public class BankProductServiceImpl implements BankProductService {
 
     private Mono<BankProduct> validatePassiveProductProperties(BankProduct product) {
         switch (product.getType()) {
-            case AHORRO:
-                if (product.getMaintenanceFee() != null && product.getMaintenanceFee() > 0) {
+            case SAVINGS:
+                SavingsAccount detailsSavingsAccount = (SavingsAccount) product.getDetails();
+                if (detailsSavingsAccount.getMaintenanceFee() != null &&
+                        detailsSavingsAccount.getMaintenanceFee() > 0) {
                     return Mono.error(new IllegalArgumentException(Constants.ERROR_SAVINGS_NO_MAINTENANCE_FEE));
                 }
-                if (product.getMonthlyLimit() == null || product.getMonthlyLimit() <= 0) {
+                if (detailsSavingsAccount.getMonthlyLimit() == null ||
+                        detailsSavingsAccount.getMonthlyLimit() <= 0) {
                     return Mono.error(new IllegalArgumentException(Constants.ERROR_SAVINGS_REQUIRE_MONTHLY_LIMIT));
                 }
                 break;
 
-            case CORRIENTE:
-                if (product.getMaintenanceFee() == null || product.getMaintenanceFee() <= 0) {
+            case CURRENT:
+                CurrentAccount detailsCurrentAccount = (CurrentAccount) product.getDetails();
+                if (detailsCurrentAccount.getMaintenanceFee() == null ||
+                        detailsCurrentAccount.getMaintenanceFee() <= 0) {
                     return Mono.error(new IllegalArgumentException(Constants.ERROR_CURRENT_ACCOUNT_REQUIRES_FEE));
                 }
-                if (product.getMonthlyLimit() != null && product.getMonthlyLimit() > 0) {
+                if (detailsCurrentAccount.getMonthlyLimit() != null &&
+                        detailsCurrentAccount.getMonthlyLimit() > 0) {
                     return Mono.error(new IllegalArgumentException(Constants.ERROR_CURRENT_ACCOUNT_NO_MONTHLY_LIMIT));
                 }
                 break;
 
-            case PLAZO_FIJO:
-                if (product.getMaintenanceFee() != null && product.getMaintenanceFee() > 0) {
+            case FIXED_TERM:
+                FixedTermAccount detailsFixedTermAccount = (FixedTermAccount) product.getDetails();
+                if (detailsFixedTermAccount.getMaintenanceFee() != null &&
+                        detailsFixedTermAccount.getMaintenanceFee() > 0) {
                     return Mono.error(new IllegalArgumentException(Constants.ERROR_FIXED_TERM_NO_MAINTENANCE_FEE));
                 }
 
-                if (product.getMonthlyLimit() != null && product.getMonthlyLimit() != 1) {
+                if (detailsFixedTermAccount.getMonthlyLimit() != null &&
+                        detailsFixedTermAccount.getMonthlyLimit() != 1) {
                     return Mono.error(new IllegalArgumentException(Constants.ERROR_FIXED_TERM_REQUIRE_MONTHLY_LIMIT));
                 }
-                if (product.getAllowedTransactionDay() == null
-                        || product.getAllowedTransactionDay() < 1
-                        || product.getAllowedTransactionDay() > 31) {
+                if (detailsFixedTermAccount.getAllowedTransactionDay() == null
+                        || detailsFixedTermAccount.getAllowedTransactionDay() < 1
+                        || detailsFixedTermAccount.getAllowedTransactionDay() > 31) {
                     return Mono.error(new IllegalArgumentException(Constants.ERROR_FIXED_TERM_REQUIRE_TRANSACTION_DAY));
                 }
                 break;
@@ -161,12 +172,12 @@ public class BankProductServiceImpl implements BankProductService {
 
     private boolean isRestrictedProductForBusiness(CustomerDTO customer, BankProduct product) {
         return customer.getType() == CustomerType.BUSINESS &&
-                (product.getType() == ProductType.AHORRO || product.getType() == ProductType.PLAZO_FIJO);
+                (product.getType() == ProductType.SAVINGS || product.getType() == ProductType.FIXED_TERM);
     }
 
     private boolean isBusinessCurrentAccount(CustomerDTO customer, BankProduct product) {
         return customer.getType() == CustomerType.BUSINESS &&
-                product.getType() == ProductType.CORRIENTE;
+                product.getType() == ProductType.CURRENT;
     }
 
     private Mono<BankProduct> validateBusinessAccountHolders(BankProduct product) {
@@ -178,7 +189,7 @@ public class BankProductServiceImpl implements BankProductService {
 
     private boolean isUniquePassiveAccountForPersonal(CustomerDTO customer, BankProduct product) {
         return customer.getType() == CustomerType.PERSONAL &&
-                (product.getType() == ProductType.AHORRO || product.getType() == ProductType.CORRIENTE);
+                (product.getType() == ProductType.SAVINGS || product.getType() == ProductType.CURRENT);
     }
 
     private Mono<BankProduct> validateUniquePassiveAccount(BankProduct product) {
@@ -201,8 +212,8 @@ public class BankProductServiceImpl implements BankProductService {
     }
 
     private boolean isPassiveProduct(ProductType type) {
-        return type == ProductType.AHORRO ||
-                type == ProductType.CORRIENTE ||
-                type == ProductType.PLAZO_FIJO;
+        return type == ProductType.SAVINGS ||
+                type == ProductType.CURRENT ||
+                type == ProductType.FIXED_TERM;
     }
 }
