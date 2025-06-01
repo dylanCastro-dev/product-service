@@ -34,15 +34,6 @@ class BankProductServiceImplTest {
     @Mock
     private WebClient webClient;
 
-    @Mock
-    private WebClient.RequestHeadersUriSpec<?> requestHeadersUriSpec;
-
-    @Mock
-    private WebClient.RequestHeadersSpec<?> requestHeadersSpec;
-
-    @Mock
-    private WebClient.ResponseSpec responseSpec;
-
     @InjectMocks
     private BankProductServiceImpl service;
 
