@@ -1,23 +1,27 @@
 package com.nttdata.product.utils;
 
 import com.nttdata.product.model.Type.ProductType;
-import com.nttdata.product.service.impl.BankProductServiceImpl;
 import org.openapitools.model.BankProductBody;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.web.reactive.function.client.WebClient;
 
 import java.math.BigDecimal;
+import java.util.function.Supplier;
 
 public class Utils {
     private static final Logger log = LoggerFactory.getLogger(Utils.class);
+    private static Supplier<WebClient> customerService =
+            () -> WebClient.builder()
+                    .baseUrl("http://localhost:8080") // URL del customer-service
+                    .build();
 
-    private static final WebClient CUSTOMER_CLIENT = WebClient.builder()
-            .baseUrl("http://localhost:8080") // URL de customer-service
-            .build();
+    public static void setCustomerService(Supplier<WebClient> supplier) {
+        customerService = supplier;
+    }
 
-    public static WebClient getCustomerService() {
-        return CUSTOMER_CLIENT;
+    public static Supplier<WebClient> getCustomerService() {
+        return customerService;
     }
 
     public static void validateBankProductBody(BankProductBody body) {
@@ -34,7 +38,8 @@ public class Utils {
             try {
                 ProductType.valueOf(body.getType().trim().toUpperCase());
             } catch (IllegalArgumentException ex) {
-                errors.append("type debe ser uno de los valores permitidos: AHORRO, CORRIENTE, PLAZO_FIJO, CREDITO_PERSONAL, CREDITO_EMPRESARIAL, TARJETA_CREDITO. ");
+                errors.append("type debe ser uno de los valores permitidos: " +
+                        "AHORRO, CORRIENTE, PLAZO_FIJO, CREDITO_PERSONAL, CREDITO_EMPRESARIAL, TARJETA_CREDITO. ");
             }
         }
 

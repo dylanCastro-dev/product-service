@@ -1,6 +1,5 @@
 package com.nttdata.product.service.impl;
 
-import com.nttdata.product.controller.BankProductController;
 import com.nttdata.product.model.BankProduct;
 import com.nttdata.product.model.Dto.CustomerDTO;
 import com.nttdata.product.model.Dto.CustomerResponse;
@@ -15,9 +14,7 @@ import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
-import org.springframework.web.bind.annotation.ExceptionHandler;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
@@ -39,7 +36,7 @@ public class BankProductServiceImpl implements BankProductService {
 
     @Override
     public Mono<BankProduct> create(BankProduct product) {
-        return Utils.getCustomerService().get()
+        return Utils.getCustomerService().get().get()
                 .uri("/customers/{id}", product.getCustomerId())
                 .retrieve()
                 .onStatus(HttpStatus::is4xxClientError, response -> {
@@ -57,11 +54,29 @@ public class BankProductServiceImpl implements BankProductService {
 
     private Mono<BankProduct> validateRules(CustomerDTO customer, BankProduct product) {
         return Mono.empty()
-                .then(isPassiveProduct(product.getType()) ? validatePassiveProductProperties(product) : Mono.empty()) //Valida las reglas específicas de negocio para productos pasivos
-                .then(isPersonalCustomerWithPersonalLoan(customer, product) ? validateSinglePersonalLoan(product) : Mono.empty()) // Valida si es cliente personal con tarjeta de credito // Un cliente personal solo puede tener un crédito personal
-                .then(isRestrictedProductForBusiness(customer, product) ? Mono.error(new IllegalArgumentException(Constants.ERROR_BUSINESS_CANNOT_HAVE_PASSIVE_ACCOUNTS)) : Mono.empty()) // Valida si es cliente es empresarial con cuenta de ahorro o plazo fijo
-                .then(isBusinessCurrentAccount(customer, product) ? validateBusinessAccountHolders(product) : Mono.empty()) // Valida si es cliente empresarial con cuenta corriente // Las cuentas corrientes empresariales deben tener al menos un titular definido
-                .then(isUniquePassiveAccountForPersonal(customer, product) ? validateUniquePassiveAccount(product) : Mono.empty()) // Valida si es cliente es personal con cuenta de ahorro o corriente // Un cliente personal no puede tener más de un producto pasivo del mismo tipo
+                .then(isPassiveProduct(product.getType()) ?
+                        //Valida las reglas específicas de negocio para productos pasivos
+                        validatePassiveProductProperties(product)
+                        : Mono.empty())
+                .then(isPersonalCustomerWithPersonalLoan(customer, product) ?
+                        // Valida si es cliente personal con tarjeta de credito
+                        // Un cliente personal solo puede tener un crédito personal
+                        validateSinglePersonalLoan(product)
+                        : Mono.empty())
+                .then(isRestrictedProductForBusiness(customer, product) ?
+                        // Valida si es cliente es empresarial con cuenta de ahorro o plazo fijo
+                        Mono.error(new IllegalArgumentException(Constants.ERROR_BUSINESS_CANNOT_HAVE_PASSIVE_ACCOUNTS))
+                        : Mono.empty())
+                .then(isBusinessCurrentAccount(customer, product) ?
+                        // Valida si es cliente empresarial con cuenta corriente
+                        // Las cuentas corrientes empresariales deben tener al menos un titular definido
+                        validateBusinessAccountHolders(product)
+                        : Mono.empty())
+                .then(isUniquePassiveAccountForPersonal(customer, product) ?
+                        // Valida si es cliente es personal con cuenta de ahorro o corriente
+                        // Un cliente personal no puede tener más de un producto pasivo del mismo tipo
+                        validateUniquePassiveAccount(product)
+                        : Mono.empty())
                 .then(repository.save(product)); // Si cumple todas las reglas, se guarda el producto
     }
 
@@ -129,7 +144,9 @@ public class BankProductServiceImpl implements BankProductService {
                 if (product.getMonthlyLimit() != null && product.getMonthlyLimit() != 1) {
                     return Mono.error(new IllegalArgumentException(Constants.ERROR_FIXED_TERM_REQUIRE_MONTHLY_LIMIT));
                 }
-                if (product.getAllowedTransactionDay() == null || product.getAllowedTransactionDay() < 1 || product.getAllowedTransactionDay() > 31) {
+                if (product.getAllowedTransactionDay() == null
+                        || product.getAllowedTransactionDay() < 1
+                        || product.getAllowedTransactionDay() > 31) {
                     return Mono.error(new IllegalArgumentException(Constants.ERROR_FIXED_TERM_REQUIRE_TRANSACTION_DAY));
                 }
                 break;
@@ -170,7 +187,14 @@ public class BankProductServiceImpl implements BankProductService {
                 .hasElements()
                 .flatMap(exists -> {
                     if (exists) {
-                        return Mono.error(new IllegalArgumentException(String.format(Constants.ERROR_PERSONAL_UNIQUE_PASSIVE_ACCOUNT,product.getType().name())));
+                        return Mono.error(
+                                new IllegalArgumentException(
+                                        String.format(
+                                                Constants.ERROR_PERSONAL_UNIQUE_PASSIVE_ACCOUNT,
+                                                product.getType().name()
+                                        )
+                                )
+                        );
                     }
                     return Mono.empty();
                 });

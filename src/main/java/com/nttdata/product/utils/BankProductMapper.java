@@ -7,7 +7,6 @@ import org.openapitools.model.BankProductResponse;
 import org.openapitools.model.BankProductResponse;
 import org.openapitools.model.TemplateResponse;
 
-import java.math.BigDecimal;
 import java.util.List;
 import java.util.stream.Collectors;
 

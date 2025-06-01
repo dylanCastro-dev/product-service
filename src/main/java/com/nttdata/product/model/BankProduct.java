@@ -2,7 +2,11 @@ package com.nttdata.product.model;
 
 import com.nttdata.product.model.Type.ProductType;
 import io.swagger.v3.oas.annotations.media.Schema;
-import lombok.*;
+
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.NoArgsConstructor;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.mapping.Document;
 
@@ -18,7 +22,8 @@ import java.util.List;
 public class BankProduct {
 
     @Id
-    @Schema(description = "ID autogenerado del producto", example = "663018e0ac82a12a8445a9b0", accessMode = Schema.AccessMode.READ_ONLY)
+    @Schema(description = "ID autogenerado del producto",
+            example = "663018e0ac82a12a8445a9b0", accessMode = Schema.AccessMode.READ_ONLY)
     private String id;
 
     @Schema(description = "ID del cliente asociado al producto", example = "cust1234", required = true)
