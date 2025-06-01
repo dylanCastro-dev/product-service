@@ -103,6 +103,15 @@ public class Utils {
                                 savings.getRequiredMonthlyAverageBalance() < 0) {
                             errors.append("requiredMonthlyAverageBalance debe ser mayor o igual a 0. ");
                         }
+
+                        if (savings.getTransactionFee() == null || savings.getTransactionFee() < 0) {
+                            errors.append("transactionFee debe ser mayor o igual a 0. ");
+                        }
+
+                        if (savings.getFreeMonthlyTransactionLimit() == null ||
+                                savings.getFreeMonthlyTransactionLimit() <= 0) {
+                            errors.append("freeMonthlyTransactionLimit debe ser mayor a 0. ");
+                        }
                         break;
                     case CREDIT:
                         CreditProduct credit = mapper.convertValue(body.getDetails(), CreditProduct.class);
@@ -118,6 +127,15 @@ public class Utils {
 
                         if (current.getMonthlyLimit() == null || current.getMonthlyLimit() < 0) {
                             errors.append("monthlyLimit debe ser mayor o igual a 0. ");
+                        }
+
+                        if (current.getTransactionFee() == null || current.getTransactionFee() < 0) {
+                            errors.append("transactionFee debe ser mayor o igual a 0. ");
+                        }
+
+                        if (current.getFreeMonthlyTransactionLimit() == null ||
+                                current.getFreeMonthlyTransactionLimit() <= 0) {
+                            errors.append("freeMonthlyTransactionLimit debe ser mayor a 0. ");
                         }
                         break;
                     case FIXED_TERM:
