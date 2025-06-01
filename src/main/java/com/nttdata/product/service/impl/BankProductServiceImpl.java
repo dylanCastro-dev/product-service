@@ -8,6 +8,7 @@ import com.nttdata.product.model.Dto.CustomerDTO;
 import com.nttdata.product.model.Dto.CustomerResponse;
 import com.nttdata.product.model.Type.CustomerType;
 import com.nttdata.product.model.Type.ProductType;
+import com.nttdata.product.model.Type.ProfileType;
 import com.nttdata.product.repository.BankProductRepository;
 import com.nttdata.product.service.BankProductService;
 import com.nttdata.product.utils.Constants;
@@ -44,7 +45,8 @@ public class BankProductServiceImpl implements BankProductService {
                 .retrieve()
                 .onStatus(HttpStatus::is4xxClientError, response -> {
                     if (response.statusCode() == HttpStatus.NOT_FOUND) {
-                        return Mono.error(new EmptyResultException(Constants.ERROR_FIND_CUSTOMER));
+                        return Mono.error(new EmptyResultException(
+                                Constants.ERROR_FIND_CUSTOMER));
                     }
                     return Mono.error(new RuntimeException("Error en la solicitud: " + response.statusCode()));
                 })
@@ -59,7 +61,7 @@ public class BankProductServiceImpl implements BankProductService {
         return Mono.empty()
                 .then(isPassiveProduct(product.getType()) ?
                         //Valida las reglas específicas de negocio para productos pasivos
-                        validatePassiveProductProperties(product)
+                        validatePassiveProductProperties(customer, product)
                         : Mono.empty())
                 .then(isPersonalCustomerWithPersonalLoan(customer, product) ?
                         // Valida si es cliente personal con tarjeta de credito
@@ -89,9 +91,12 @@ public class BankProductServiceImpl implements BankProductService {
                 .flatMap(existing -> {
                     existing.setCustomerId(product.getCustomerId());
                     existing.setType(product.getType());
+                    existing.setStatus(product.getStatus());
                     existing.setName(product.getName());
                     existing.setBalance(product.getBalance());
                     existing.setDetails(product.getDetails());
+                    existing.setHolders(product.getHolders());
+                    existing.setSigners(product.getSigners());
                     return repository.save(existing);
                 });
     }
@@ -112,53 +117,85 @@ public class BankProductServiceImpl implements BankProductService {
                 .hasElements()
                 .flatMap(exists -> {
                     if (exists) {
-                        return Mono.error(new IllegalArgumentException(Constants.ERROR_PERSONAL_ONE_CREDIT_ONLY));
+                        return Mono.error(new IllegalArgumentException(
+                                Constants.ERROR_PERSONAL_ONE_CREDIT_ONLY));
                     }
                     return Mono.empty();
                 });
     }
 
-    private Mono<BankProduct> validatePassiveProductProperties(BankProduct product) {
+    private Mono<BankProduct> validatePassiveProductProperties(CustomerDTO customer, BankProduct product) {
         switch (product.getType()) {
             case SAVINGS:
                 SavingsAccount detailsSavingsAccount = (SavingsAccount) product.getDetails();
                 if (detailsSavingsAccount.getMaintenanceFee() != null &&
                         detailsSavingsAccount.getMaintenanceFee() > 0) {
-                    return Mono.error(new IllegalArgumentException(Constants.ERROR_SAVINGS_NO_MAINTENANCE_FEE));
+                    return Mono.error(new IllegalArgumentException(
+                            Constants.ERROR_SAVINGS_NO_MAINTENANCE_FEE));
                 }
                 if (detailsSavingsAccount.getMonthlyLimit() == null ||
                         detailsSavingsAccount.getMonthlyLimit() <= 0) {
-                    return Mono.error(new IllegalArgumentException(Constants.ERROR_SAVINGS_REQUIRE_MONTHLY_LIMIT));
+                    return Mono.error(new IllegalArgumentException(
+                            Constants.ERROR_SAVINGS_REQUIRE_MONTHLY_LIMIT));
+                }
+
+                // Validación: Ahorro VIP para cliente personal con tarjeta de crédito
+                if (customer.getType() == CustomerType.PERSONAL &&
+                        customer.getProfile() == ProfileType.VIP) {
+                    return validateHasCreditCard(customer.getId());
                 }
                 break;
 
             case CURRENT:
-                CurrentAccount detailsCurrentAccount = (CurrentAccount) product.getDetails();
-                if (detailsCurrentAccount.getMaintenanceFee() == null ||
-                        detailsCurrentAccount.getMaintenanceFee() <= 0) {
-                    return Mono.error(new IllegalArgumentException(Constants.ERROR_CURRENT_ACCOUNT_REQUIRES_FEE));
+                CurrentAccount current = (CurrentAccount) product.getDetails();
+                boolean isPymeBusiness = customer.getType() == CustomerType.BUSINESS &&
+                        customer.getProfile() == ProfileType.PYME;
+
+                // Validación 1: Si es PYME, no debe tener comisión
+                if (isPymeBusiness &&
+                        (current.getMaintenanceFee() == null || current.getMaintenanceFee() > 0)) {
+                    return Mono.error(new IllegalArgumentException(
+                            Constants.ERROR_CURRENT_ACCOUNT_BUSINESS_PYMES_NO_REQUIRES_FEE));
                 }
-                if (detailsCurrentAccount.getMonthlyLimit() != null &&
-                        detailsCurrentAccount.getMonthlyLimit() > 0) {
-                    return Mono.error(new IllegalArgumentException(Constants.ERROR_CURRENT_ACCOUNT_NO_MONTHLY_LIMIT));
+
+                // Validación 2: Si NO es PYME, debe tener comisión válida
+                if (!isPymeBusiness &&
+                        (current.getMaintenanceFee() == null || current.getMaintenanceFee() <= 0)) {
+                    return Mono.error(new IllegalArgumentException(
+                            Constants.ERROR_CURRENT_ACCOUNT_REQUIRES_FEE));
                 }
+
+                // Validación 3: Ningún cliente debe tener límite mensual
+                if (current.getMonthlyLimit() != null && current.getMonthlyLimit() > 0) {
+                    return Mono.error(new IllegalArgumentException(
+                            Constants.ERROR_CURRENT_ACCOUNT_NO_MONTHLY_LIMIT));
+                }
+
+                // Validación 4: Si es PYME, debe tener tarjeta de crédito activa
+                if (isPymeBusiness) {
+                    return validateHasCreditCard(customer.getId()).then(Mono.just(product));
+                }
+
                 break;
 
             case FIXED_TERM:
                 FixedTermAccount detailsFixedTermAccount = (FixedTermAccount) product.getDetails();
                 if (detailsFixedTermAccount.getMaintenanceFee() != null &&
                         detailsFixedTermAccount.getMaintenanceFee() > 0) {
-                    return Mono.error(new IllegalArgumentException(Constants.ERROR_FIXED_TERM_NO_MAINTENANCE_FEE));
+                    return Mono.error(new IllegalArgumentException(
+                            Constants.ERROR_FIXED_TERM_NO_MAINTENANCE_FEE));
                 }
 
                 if (detailsFixedTermAccount.getMonthlyLimit() != null &&
                         detailsFixedTermAccount.getMonthlyLimit() != 1) {
-                    return Mono.error(new IllegalArgumentException(Constants.ERROR_FIXED_TERM_REQUIRE_MONTHLY_LIMIT));
+                    return Mono.error(new IllegalArgumentException(
+                            Constants.ERROR_FIXED_TERM_REQUIRE_MONTHLY_LIMIT));
                 }
                 if (detailsFixedTermAccount.getAllowedTransactionDay() == null
                         || detailsFixedTermAccount.getAllowedTransactionDay() < 1
                         || detailsFixedTermAccount.getAllowedTransactionDay() > 31) {
-                    return Mono.error(new IllegalArgumentException(Constants.ERROR_FIXED_TERM_REQUIRE_TRANSACTION_DAY));
+                    return Mono.error(new IllegalArgumentException(
+                            Constants.ERROR_FIXED_TERM_REQUIRE_TRANSACTION_DAY));
                 }
                 break;
 
@@ -216,4 +253,17 @@ public class BankProductServiceImpl implements BankProductService {
                 type == ProductType.CURRENT ||
                 type == ProductType.FIXED_TERM;
     }
+
+    private Mono<BankProduct> validateHasCreditCard(String customerId) {
+        return repository.findByCustomerId(customerId)
+                .filter(product -> product.getType() == ProductType.CREDIT)
+                .hasElements()
+                .flatMap(hasCredit -> {
+                    if (!hasCredit) {
+                        return Mono.error(new IllegalArgumentException(Constants.ERROR_CREDIT_CARD_REQUIRED));
+                    }
+                    return Mono.empty();
+                });
+    }
+
 }

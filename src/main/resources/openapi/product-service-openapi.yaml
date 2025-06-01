@@ -115,7 +115,11 @@ components:
         type:
           type: string
           description: Tipo de producto bancario
-          example: SAVINGS
+          example: "[ SAVINGS, CURRENT, FIXED_TERM, CREDIT ]"
+        status:
+          type: string
+          description: Estado de producto bancario
+          example: "[ ACTIVE, BLOCKED_AVG_BALANCE ]"
         name:
           type: string
           description: Nombre descriptivo del producto
@@ -125,12 +129,25 @@ components:
           format: decimal
           description: Saldo actual del producto
           example: 1000.50
+        holders:
+          type: array
+          description: Titulares de la cuenta empresarial
+          items:
+            type: string
+          example: [ "12345678", "87654321" ]
+        signers:
+          type: array
+          description: Firmantes autorizados
+          items:
+            type: string
+          example: [ "99887766" ]
         details:
           type: object
           description: Detalles del producto como JSON genérico
           example:
             maintenanceFee: 0
             monthlyLimit: 2
+            requiredMonthlyAverageBalance: 1000
 
     BankProductResponse:
       type: object
@@ -146,7 +163,11 @@ components:
         type:
           type: string
           description: Tipo de producto bancario
-          example: SAVINGS
+          example: "[ SAVINGS, CURRENT, FIXED_TERM, CREDIT ]"
+        status:
+          type: string
+          description: Estado de producto bancario
+          example: "[ ACTIVE, BLOCKED_AVG_BALANCE ]"
         name:
           type: string
           description: Nombre descriptivo del producto
@@ -156,6 +177,18 @@ components:
           format: decimal
           description: Saldo actual del producto
           example: 1000.50
+        holders:
+          type: array
+          description: Titulares de la cuenta empresarial
+          items:
+            type: string
+          example: [ "12345678", "87654321" ]
+        signers:
+          type: array
+          description: Firmantes autorizados
+          items:
+            type: string
+          example: [ "99887766" ]
         details:
           type: object
           description: Detalles del producto como JSON genérico

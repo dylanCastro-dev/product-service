@@ -7,6 +7,7 @@ import com.nttdata.product.model.Details.FixedTermAccount;
 import com.nttdata.product.model.Details.ProductDetails;
 import com.nttdata.product.model.Details.SavingsAccount;
 import com.nttdata.product.model.Details.CreditProduct;
+import com.nttdata.product.model.Type.ProductStatus;
 import com.nttdata.product.model.Type.ProductType;
 import org.openapitools.model.BankProductBody;
 import org.slf4j.Logger;
@@ -14,8 +15,10 @@ import org.slf4j.LoggerFactory;
 import org.springframework.web.reactive.function.client.WebClient;
 
 import java.math.BigDecimal;
+import java.util.Arrays;
 import java.util.Map;
 import java.util.function.Supplier;
+import java.util.stream.Collectors;
 
 public class Utils {
     private static final Logger log = LoggerFactory.getLogger(Utils.class);
@@ -53,8 +56,23 @@ public class Utils {
             try {
                 ProductType.valueOf(body.getType().trim().toUpperCase());
             } catch (IllegalArgumentException ex) {
-                errors.append("type debe ser uno de los valores permitidos: " +
-                        "AHORRO, CORRIENTE, PLAZO_FIJO, CREDITO. ");
+                String allowedTypes = Arrays.stream(ProductType.values())
+                        .map(Enum::name)
+                        .collect(Collectors.joining(", "));
+                errors.append("type debe ser uno de los valores permitidos: ").append(allowedTypes).append(". ");
+            }
+        }
+
+        if (body.getStatus() == null || body.getStatus().trim().isEmpty()) {
+            errors.append("type es obligatorio. ");
+        } else {
+            try {
+                ProductStatus.valueOf(body.getStatus().trim().toUpperCase());
+            } catch (IllegalArgumentException ex) {
+                String allowedTypes = Arrays.stream(ProductStatus.values())
+                        .map(Enum::name)
+                        .collect(Collectors.joining(", "));
+                errors.append("type debe ser uno de los valores permitidos: ").append(allowedTypes).append(". ");
             }
         }
 
@@ -72,16 +90,45 @@ public class Utils {
             try {
                 switch (ProductType.valueOf(body.getType())) {
                     case SAVINGS:
-                        mapper.convertValue(body.getDetails(), SavingsAccount.class);
+                        SavingsAccount savings = mapper.convertValue(body.getDetails(), SavingsAccount.class);
+                        if (savings.getMaintenanceFee() == null || savings.getMaintenanceFee() < 0) {
+                            errors.append("maintenanceFee debe ser mayor o igual a 0. ");
+                        }
+
+                        if (savings.getMonthlyLimit() == null || savings.getMonthlyLimit() < 0) {
+                            errors.append("monthlyLimit debe ser mayor o igual a 0. ");
+                        }
+
+                        if (savings.getRequiredMonthlyAverageBalance() == null ||
+                                savings.getRequiredMonthlyAverageBalance() < 0) {
+                            errors.append("requiredMonthlyAverageBalance debe ser mayor o igual a 0. ");
+                        }
                         break;
                     case CREDIT:
-                        mapper.convertValue(body.getDetails(), CreditProduct.class);
+                        CreditProduct credit = mapper.convertValue(body.getDetails(), CreditProduct.class);
+                        if (credit.getCreditLimit() == null || credit.getCreditLimit().compareTo(BigDecimal.ZERO) < 0) {
+                            errors.append("creditLimit debe ser mayor o igual a 0. ");
+                        }
                         break;
                     case CURRENT:
-                        mapper.convertValue(body.getDetails(), CurrentAccount.class);
+                        CurrentAccount current = mapper.convertValue(body.getDetails(), CurrentAccount.class);
+                        if (current.getMaintenanceFee() == null || current.getMaintenanceFee() < 0) {
+                            errors.append("maintenanceFee debe ser mayor o igual a 0. ");
+                        }
+
+                        if (current.getMonthlyLimit() == null || current.getMonthlyLimit() < 0) {
+                            errors.append("monthlyLimit debe ser mayor o igual a 0. ");
+                        }
                         break;
                     case FIXED_TERM:
-                        mapper.convertValue(body.getDetails(), FixedTermAccount.class);
+                        FixedTermAccount fixed = mapper.convertValue(body.getDetails(), FixedTermAccount.class);
+                        if (fixed.getMaintenanceFee() == null || fixed.getMaintenanceFee() < 0) {
+                            errors.append("maintenanceFee debe ser mayor o igual a 0. ");
+                        }
+
+                        if (fixed.getMonthlyLimit() == null || fixed.getMonthlyLimit() < 0) {
+                            errors.append("monthlyLimit debe ser mayor o igual a 0. ");
+                        }
                         break;
                     default:
                         errors.append("Tipo no soportado: ").append(body.getType()).append(". ");

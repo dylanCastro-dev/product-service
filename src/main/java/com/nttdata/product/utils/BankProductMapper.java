@@ -3,6 +3,7 @@ package com.nttdata.product.utils;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.nttdata.product.model.BankProduct;
 import com.nttdata.product.model.Details.ProductDetails;
+import com.nttdata.product.model.Type.ProductStatus;
 import com.nttdata.product.model.Type.ProductType;
 
 import org.openapitools.model.BankProductBody;
@@ -18,18 +19,24 @@ public class BankProductMapper {
                 .id(product.getId())
                 .customerId(product.getCustomerId())
                 .type(product.getType().name())
+                .status(product.getStatus().name())
                 .name(product.getName())
                 .balance(product.getBalance())
-                .details(product.getDetails());
+                .details(product.getDetails())
+                .holders(product.getHolders())
+                .signers(product.getSigners());
     }
 
     public static BankProduct toBankProduct(BankProductBody request) {
         return BankProduct.builder()
                 .customerId(request.getCustomerId())
                 .type(ProductType.valueOf(request.getType()))
+                .status(ProductStatus.valueOf(request.getStatus()))
                 .name(request.getName())
                 .balance(request.getBalance())
                 .details(convertRawDetails(request.getDetails(), ProductType.valueOf(request.getType())))
+                .holders(request.getHolders())
+                .signers(request.getSigners())
                 .build();
     }
 

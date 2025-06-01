@@ -14,6 +14,9 @@ public class Constants {
     public static final String ERROR_VALIDATION_MESSAGE = "Error de validación: %s";
 
     // Constantes para validaciones de reglas de productos
+    public static final String ERROR_CREDIT_CARD_REQUIRED =
+            "El cliente debe tener al menos una tarjeta de crédito activa con el banco para solicitar este producto.";
+
     public static final String ERROR_BUSINESS_CANNOT_HAVE_PASSIVE_ACCOUNTS =
             "Los clientes comerciales no pueden tener cuentas de ahorro o de plazo fijo.";
 
@@ -32,6 +35,8 @@ public class Constants {
             "Las cuentas de ahorro deben tener un límite mensual de movimientos mayor a 0.";
     public static final String ERROR_CURRENT_ACCOUNT_REQUIRES_FEE =
             "Las cuentas corrientes deben tener comisión de mantenimiento mayor a 0.";
+    public static final String ERROR_CURRENT_ACCOUNT_BUSINESS_PYMES_NO_REQUIRES_FEE =
+            "Las cuentas corrientes empresariales PYMES no deben tener comisión de mantenimiento.";
     public static final String ERROR_CURRENT_ACCOUNT_NO_MONTHLY_LIMIT =
             "Las cuentas corrientes no deben tener límite de movimientos mensuales.";
     public static final String ERROR_FIXED_TERM_NO_MAINTENANCE_FEE =

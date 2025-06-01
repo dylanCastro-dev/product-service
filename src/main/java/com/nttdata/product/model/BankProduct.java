@@ -1,6 +1,7 @@
 package com.nttdata.product.model;
 
 import com.nttdata.product.model.Details.ProductDetails;
+import com.nttdata.product.model.Type.ProductStatus;
 import com.nttdata.product.model.Type.ProductType;
 
 import lombok.AllArgsConstructor;
@@ -27,6 +28,8 @@ public class BankProduct {
     private String customerId;
 
     private ProductType type;
+
+    private ProductStatus status;
 
     private String name;
 
