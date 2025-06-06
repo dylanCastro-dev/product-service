@@ -35,6 +35,14 @@ public class BankProductController implements ProductsApi {
     }
 
     @Override
+    public Mono<ResponseEntity<TemplateResponse>> getAllProductsByCustomerId(String id, ServerWebExchange exchange) {
+        return service.getByCustomerId(id)
+                .collectList()
+                .map(products -> toResponse(products, 200, Constants.SUCCESS_FIND_LIST_PRODUCT))
+                .map(ResponseEntity::ok);
+    }
+
+    @Override
     public Mono<ResponseEntity<TemplateResponse>> getProductById(String id, ServerWebExchange exchange) {
         return service.getById(id)
                 .map(product -> toResponse(product, 200, Constants.SUCCESS_FIND_PRODUCT))

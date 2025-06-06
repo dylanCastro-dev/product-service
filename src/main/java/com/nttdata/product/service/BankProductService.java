@@ -22,6 +22,14 @@ public interface BankProductService {
     public Mono<BankProduct> getById(String id);
 
     /**
+     * Busca un producto bancario por su codigo de cliente.
+     *
+     * @param id Identificador del cliente
+     * @return Flux con la lista de productos bancarios
+     */
+    Flux<BankProduct> getByCustomerId(String id);
+
+    /**
      * Crea un nuevo producto bancario después de aplicar las validaciones de negocio correspondientes.
      *
      * @param product Producto bancario a registrar

@@ -39,6 +39,11 @@ public class BankProductServiceImpl implements BankProductService {
     }
 
     @Override
+    public Flux<BankProduct> getByCustomerId(String id) {
+        return repository.findByCustomerId(id);
+    }
+
+    @Override
     public Mono<BankProduct> create(BankProduct product) {
         return Utils.getCustomerService().get().get()
                 .uri("/customers/{id}", product.getCustomerId())
