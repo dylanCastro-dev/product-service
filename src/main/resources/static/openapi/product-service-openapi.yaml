@@ -8,6 +8,26 @@ servers:
     description: Servidor local
 
 paths:
+  /products/customer/{id}:
+    get:
+      summary: Obtener un producto por su codigo de cliente
+      description: Busca un producto bancario usando su codigo de cliente
+      operationId: getAllProductsByCustomerId
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: ID del cliente del producto a consultar
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Lista de productos
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TemplateResponse'
+
   /products:
     get:
       summary: Obtener todos los productos
