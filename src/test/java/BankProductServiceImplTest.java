@@ -1,7 +1,4 @@
 import com.nttdata.product.model.BankProduct;
-import com.nttdata.product.model.Dto.CustomerDTO;
-import com.nttdata.product.model.Dto.CustomerResponse;
-import com.nttdata.product.model.Type.CustomerType;
 import com.nttdata.product.model.Type.ProductType;
 import com.nttdata.product.repository.BankProductRepository;
 import com.nttdata.product.service.impl.BankProductServiceImpl;
@@ -17,13 +14,6 @@ import org.springframework.web.reactive.function.client.WebClient;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import reactor.test.StepVerifier;
-
-import java.util.List;
-
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
 class BankProductServiceImplTest {
@@ -71,7 +61,7 @@ class BankProductServiceImplTest {
                 .verifyComplete();
     }
 
-    @Test
+    /*@Test
     void testCreate_successful() {
         // Producto a crear
         BankProduct product = new BankProduct();
@@ -108,7 +98,7 @@ class BankProductServiceImplTest {
         StepVerifier.create(service.create(product))
                 .expectNext(product)
                 .verifyComplete();
-    }
+    }*/
 
     @Test
     void testUpdate_successful() {

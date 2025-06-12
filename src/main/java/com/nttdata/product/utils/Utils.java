@@ -10,6 +10,7 @@ import com.nttdata.product.model.Details.CreditProduct;
 import com.nttdata.product.model.Type.ProductStatus;
 import com.nttdata.product.model.Type.ProductType;
 import org.openapitools.model.BankProductBody;
+import org.openapitools.model.CardBody;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.web.reactive.function.client.WebClient;
@@ -161,6 +162,39 @@ public class Utils {
                 throw new IllegalArgumentException(errors.toString().trim());
             }
 
+        }
+
+    }
+
+    public static void validateCardBody(CardBody body){
+        if (body == null) {
+            throw new IllegalArgumentException("La tarjeta de débito no puede ser nula.");
+        }
+
+        if (body.getCardNumber() == null || body.getCardNumber().isBlank()) {
+            throw new IllegalArgumentException("El número de tarjeta es obligatorio.");
+        }
+
+        if (body.getCustomerId() == null || body.getCustomerId().isBlank()) {
+            throw new IllegalArgumentException("El ID del cliente es obligatorio.");
+        }
+
+        if (body.getPrimaryAccountId() == null || body.getPrimaryAccountId().isBlank()) {
+            throw new IllegalArgumentException("Debe especificarse una cuenta principal.");
+        }
+
+        if (body.getLinkedAccountIds() == null || body.getLinkedAccountIds().isEmpty()) {
+            throw new IllegalArgumentException("Debe asociarse al menos una cuenta bancaria.");
+        }
+
+        if (!body.getLinkedAccountIds().contains(body.getPrimaryAccountId())) {
+            throw new IllegalArgumentException
+                    ("La cuenta principal debe estar incluida en la lista de cuentas asociadas.");
+        }
+
+        long distinctCount = body.getLinkedAccountIds().stream().distinct().count();
+        if (distinctCount != body.getLinkedAccountIds().size()) {
+            throw new IllegalArgumentException("No se permiten cuentas bancarias duplicadas.");
         }
 
     }

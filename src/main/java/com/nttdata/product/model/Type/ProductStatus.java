@@ -14,5 +14,10 @@ public enum ProductStatus {
     /**
      * Producto bloqueado por no cumplir con el monto promedio diario mensual requerido.
      */
-    BLOCKED_AVG_BALANCE;
+    BLOCKED_AVG_BALANCE,
+
+    /**
+     * Producto bloqueado por deuda vencida.
+     */
+    BLOCKED_OVERDUE_DEBT;
 }

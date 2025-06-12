@@ -13,9 +13,15 @@ public class Constants {
     public static final String ERROR_INTERNAL  = "Hubo un problema con la solicitud";
     public static final String ERROR_VALIDATION_MESSAGE = "Error de validación: %s";
 
+    public static final String SUCCESS_FIND_CARD = "Tarjeta encontrada correctamente";
+    public static final String ERROR_FIND_CARD = "Tarjeta encontrada correctamente";
+    public static final String SUCCESS_CREATE_CARD = "Tarjeta registrada correctamente";
     // Constantes para validaciones de reglas de productos
     public static final String ERROR_CREDIT_CARD_REQUIRED =
             "El cliente debe tener al menos una tarjeta de crédito activa con el banco para solicitar este producto.";
+
+    public static final String ERROR_CREDIT_CARD_OVERDUE_DEBT =
+            "El cliente no debe tener un producto de credito con deuda vencida para crear otro producto.";
 
     public static final String ERROR_BUSINESS_CANNOT_HAVE_PASSIVE_ACCOUNTS =
             "Los clientes comerciales no pueden tener cuentas de ahorro o de plazo fijo.";

@@ -7,6 +7,7 @@ import com.nttdata.product.model.Details.SavingsAccount;
 import com.nttdata.product.model.Dto.CustomerDTO;
 import com.nttdata.product.model.Dto.CustomerResponse;
 import com.nttdata.product.model.Type.CustomerType;
+import com.nttdata.product.model.Type.ProductStatus;
 import com.nttdata.product.model.Type.ProductType;
 import com.nttdata.product.model.Type.ProfileType;
 import com.nttdata.product.repository.BankProductRepository;
@@ -64,6 +65,7 @@ public class BankProductServiceImpl implements BankProductService {
 
     private Mono<BankProduct> validateRules(CustomerDTO customer, BankProduct product) {
         return Mono.empty()
+                .then(isCustomerWithOverdueDebt(customer))
                 .then(isPassiveProduct(product.getType()) ?
                         //Valida las reglas específicas de negocio para productos pasivos
                         validatePassiveProductProperties(customer, product)
@@ -266,6 +268,19 @@ public class BankProductServiceImpl implements BankProductService {
                 .flatMap(hasCredit -> {
                     if (!hasCredit) {
                         return Mono.error(new IllegalArgumentException(Constants.ERROR_CREDIT_CARD_REQUIRED));
+                    }
+                    return Mono.empty();
+                });
+    }
+
+    private Mono<Object> isCustomerWithOverdueDebt(CustomerDTO customer) {
+        return repository.findByCustomerId(customer.getId())
+                .filter(product -> product.getType() == ProductType.CREDIT
+                        && product.getStatus() == ProductStatus.BLOCKED_OVERDUE_DEBT)
+                .hasElements()
+                .flatMap(hasOverdueDebt -> {
+                    if (hasOverdueDebt) {
+                        return Mono.error(new IllegalArgumentException(Constants.ERROR_CREDIT_CARD_OVERDUE_DEBT));
                     }
                     return Mono.empty();
                 });

@@ -8,7 +8,7 @@ import com.nttdata.product.model.Type.ProductType;
 
 import org.openapitools.model.BankProductBody;
 import org.openapitools.model.BankProductResponse;
-import org.openapitools.model.TemplateResponse;
+import org.openapitools.model.BankProductTemplateResponse;
 
 import java.util.List;
 import java.util.stream.Collectors;
@@ -45,26 +45,26 @@ public class BankProductMapper {
         return new ObjectMapper().convertValue(raw, clazz);
     }
 
-    public static TemplateResponse toResponse(BankProduct product, int status, String message) {
-        return new TemplateResponse()
+    public static BankProductTemplateResponse toResponse(BankProduct product, int status, String message) {
+        return new BankProductTemplateResponse()
                 .status(status)
                 .message(message)
                 .addProductsItem(toBankProductResponse(product));
     }
 
-    public static TemplateResponse toResponse(List<BankProduct> lstProduct, int status, String message) {
+    public static BankProductTemplateResponse toResponse(List<BankProduct> lstProduct, int status, String message) {
         List<BankProductResponse> products = lstProduct.stream()
                 .map(BankProductMapper::toBankProductResponse)
                 .collect(Collectors.toList());
 
-        return new TemplateResponse()
+        return new BankProductTemplateResponse()
                 .status(status)
                 .message(message)
                 .products(products);
     }
 
-    public static TemplateResponse toResponse(int status, String message) {
-        return new TemplateResponse()
+    public static BankProductTemplateResponse toResponse(int status, String message) {
+        return new BankProductTemplateResponse()
                 .status(status)
                 .message(message)
                 .products(null);
